@@ -7,6 +7,13 @@ class ProcessSpec extends FunSpec with Matchers {
   val corpusDir =
     getClass().getClassLoader().getResource("inaugural/").getPath()
 
+  def time[R](block: => R): Long = {  
+      val t0 = System.nanoTime()
+      block
+      val t1 = System.nanoTime()
+      ((t1 - t0) / 1e6).toLong  // ms
+  }    
+    
   describe("Process") {
     describe("lemmatize") {
       describe("when passed a Corpus") {
@@ -51,6 +58,24 @@ class ProcessSpec extends FunSpec with Matchers {
               entities shouldBe Vector("Communism", "Communism", "Democracy", "Communism", "Communism")
               lemmas shouldBe Vector("mr.", "vice", "president", ",", "mr.")
             }
+        }
+        
+        it("should run faster when multithreaded") {
+          import Process.EnrichedJCas
+          
+          val corpus = Corpus.fromDir(corpusDir)
+          
+          val singleThreadMillis = time {
+            val singleIterator = Process.lemmatizeAndNER.runSingleThread(corpus)
+            for (_ <- singleIterator) { /* exhaust iterator */ }
+          }
+
+          val multiThreadMillis = time {
+            val multiThreadIterator = Process.lemmatizeAndNER.runMultiThread(corpus)
+            for (_ <- multiThreadIterator) { /* exhaust iterator */ }
+          }
+          
+          multiThreadMillis should be < singleThreadMillis - 10000
         }
       }
     }

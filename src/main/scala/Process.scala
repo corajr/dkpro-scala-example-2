@@ -10,10 +10,15 @@ import de.tudarmstadt.ukp.dkpro.core.opennlp.OpenNlpNameFinder
 case class Process(engines: Seq[AnalysisEngineDescription]) {
   import scala.collection.JavaConversions._
   
-  def apply(corpus: Corpus): Iterator[JCas] =
+  def apply(corpus: Corpus) = runSingleThread(corpus)
+  
+  def runSingleThread(corpus: Corpus): Iterator[JCas] =
     iteratePipeline(
       corpus.reader,
       engines: _*).iterator()
+  
+  def runMultiThread(corpus: Corpus): Iterator[JCas] =
+    runSingleThread(corpus)
 }
 
 object Process {
