@@ -5,6 +5,7 @@ import org.apache.uima.fit.util.JCasUtil
 import org.apache.uima.jcas.JCas
 import org.apache.uima.jcas.cas.TOP
 import de.tudarmstadt.ukp.dkpro.core.clearnlp.{ClearNlpSegmenter, ClearNlpLemmatizer, ClearNlpPosTagger}
+import de.tudarmstadt.ukp.dkpro.core.opennlp.OpenNlpNameFinder
 
 case class Process(engines: Seq[AnalysisEngineDescription]) {
   import scala.collection.JavaConversions._
@@ -23,6 +24,14 @@ object Process {
       createEngineDescription(classOf[ClearNlpLemmatizer]) 
     )
 
+  val lemmatizeAndNER =
+    Process(
+      createEngineDescription(classOf[ClearNlpSegmenter]),
+      createEngineDescription(classOf[ClearNlpPosTagger]), 
+      createEngineDescription(classOf[ClearNlpLemmatizer]),
+      createEngineDescription(classOf[OpenNlpNameFinder]) 
+    )    
+    
   def apply(engines: AnalysisEngineDescription*)(implicit d: DummyImplicit) = new Process(Seq(engines: _*))
   
   implicit class EnrichedJCas(jcas: JCas) {
