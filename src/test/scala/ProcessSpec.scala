@@ -40,6 +40,17 @@ class ProcessSpec extends FunSpec with Matchers {
           val lemmas = jcas.select(classOf[Lemma]).take(5).map(_.getValue).toSeq
           lemmas shouldBe Seq("fellow", "-", "citizen", "of", "the")
         }
+        
+        it("should be able to run multithreaded") {
+          import Process.EnrichedJCas
+
+          val corpus = Corpus.fromDir(corpusDir)
+          val jcasIterator = Process.lemmatize.runMultiThread(corpus)
+          val jcas = jcasIterator.next()
+          val lemmas = jcas.select(classOf[Lemma]).take(5).map(_.getValue).toSeq
+          lemmas shouldBe Seq("fellow", "-", "citizen", "of", "the")          
+        }
+
       }
     }
     

@@ -18,7 +18,7 @@ case class Process(engines: Seq[AnalysisEngineDescription]) {
       engines: _*).iterator()
   
   def runMultiThread(corpus: Corpus): Iterator[JCas] =
-    runSingleThread(corpus)
+    ???
 }
 
 object Process {
