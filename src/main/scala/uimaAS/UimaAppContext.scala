@@ -10,7 +10,7 @@ case class UimaAppContext(
   serverUri: String = "vm://localhost?create=false",
   endpoint: String = "uimaAS",
   casPoolSize: Int = 1,
-  casInitialHeapSize: Int = 500000,
+  casInitialHeapSize: Int = 500000, // number of 4-byte words = 2000000 bytes (2 MB)
   applicationName: String = "",
   getMetaTimeout: Int = 60000,
   timeout: Option[Int] = None,

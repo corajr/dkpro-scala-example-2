@@ -55,6 +55,7 @@ class UimaAsyncDeploymentConfigSpec extends FunSpec with Matchers with PropertyC
         val xml = XML.loadFile(fname)    
         val deploy = xml \\ "analysisEngineDeploymentDescription" \\ "deployment" 
         (deploy \\ "casPool" \@ "numberOfCASes") shouldBe appCtx.casPoolSize.toString
+        (deploy \\ "casPool" \@ "initialFsHeapSize") shouldBe (appCtx.casInitialHeapSize * 4).toString
         (deploy \\ "service" \\ "inputQueue" \@ "endpoint") shouldBe appCtx.endpoint
         val engineXML = deploy \\ "service" \\ "topDescriptor" \\ "import" \@ "location"
         new java.io.File(engineXML) shouldBe 'exists
