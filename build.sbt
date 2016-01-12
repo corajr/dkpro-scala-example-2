@@ -11,8 +11,10 @@ libraryDependencies ++= Seq(
   "org.apache.uima" % "uimaj-as-activemq" % "2.6.0",
   "com.clearnlp" % "clearnlp-dictionary" % "1.0",
   "com.clearnlp" % "clearnlp-general-en-pos" % "1.0",
+  "com.typesafe.scala-logging" %% "scala-logging" % "3.1.0",
   "org.scala-lang.modules" %% "scala-xml" % "1.0.3",
   "org.scalacheck" %% "scalacheck" % "1.12.5" % "test",
+  "org.scalamock" %% "scalamock-scalatest-support" % "3.2" % "test",
   "org.scalatest" %% "scalatest" % "2.2.4" % "test"
 )
 

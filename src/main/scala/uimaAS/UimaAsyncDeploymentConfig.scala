@@ -10,7 +10,8 @@ case class UimaAsyncDeploymentConfig(
   appCtx: UimaAppContext = UimaAppContext(),
   name: String = "",
   description: String = "",
-  descriptor: String = ""
+  descriptor: String = "",
+  async: Boolean = true
   ) {
   def toXML(): String = {
     val serviceCtx = new ServiceContextImpl(name, description, descriptor, appCtx.endpoint)
@@ -24,6 +25,7 @@ case class UimaAsyncDeploymentConfig(
     deployDescriptor.setInitialHeapSize(appCtx.casInitialHeapSize * 4)
     deployDescriptor.setCasPoolSize(appCtx.casPoolSize)
     deployDescriptor.setServiceAnalysisEngineDescriptor(engineXML)
+    deployDescriptor.setAsync(async)
     Util.tmpFile(deployDescriptor.save(_))
   }
 }

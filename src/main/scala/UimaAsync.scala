@@ -8,6 +8,7 @@ import uimaAS._
 
 class UimaAsync(val config: UimaAppContext = UimaAppContext()) {
   val engine: UimaAsynchronousEngine = new BaseUIMAAsynchronousEngine_impl
+  val statusListener = new UimaStatusCallbackListener(this.engine)
   val configMap = config.toMap
   var springContainerId: Option[String] = None
   
@@ -18,6 +19,7 @@ class UimaAsync(val config: UimaAppContext = UimaAppContext()) {
 
     val collectionReader = UIMAFramework.produceCollectionReader(corpus.reader)
     engine.setCollectionReader(collectionReader)
+    engine.addStatusCallbackListener(statusListener)
     
     val deployConfig = UimaAsyncDeploymentConfig(engineDescs = process.engines, appCtx = config)
     val deployXML = deployConfig.toXML()
@@ -26,7 +28,9 @@ class UimaAsync(val config: UimaAppContext = UimaAppContext()) {
     
     engine.initialize(configMap)
     engine.process()
-
+  }
+  
+  def stop(): Unit = {
     springContainerId.foreach { springId => engine.undeploy(springId) }
     engine.stop()
   }
@@ -43,8 +47,5 @@ object UimaAsync {
     this.broker = Some(broker)
   }
 
-  def stop(): Unit = broker match {
-    case Some(b) => b.stop()
-    case None => ()
-  }
+  def stop(): Unit = broker.foreach { b => b.stop() }
 }
