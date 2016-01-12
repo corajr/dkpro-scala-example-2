@@ -14,6 +14,8 @@ libraryDependencies ++= Seq(
   "com.typesafe.scala-logging" %% "scala-logging" % "3.1.0",
   "org.scala-lang.modules" %% "scala-xml" % "1.0.3",
   "org.scalacheck" %% "scalacheck" % "1.12.5" % "test",
+  "org.jmock" % "jmock" % "2.8.1" % "test",
+  "org.jmock" % "jmock-legacy" % "2.8.1" % "test",
   "org.scalamock" %% "scalamock-scalatest-support" % "3.2" % "test",
   "org.scalatest" %% "scalatest" % "2.2.4" % "test"
 )
