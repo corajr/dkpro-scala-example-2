@@ -4,19 +4,25 @@ import org.apache.uima.aae.client.UimaASProcessStatus
 import org.apache.uima.aae.client.UimaAsynchronousEngine
 import org.apache.uima.collection.EntityProcessStatus
 import org.apache.uima.cas.CAS
+import org.apache.uima.jcas.JCas
 import scala.collection.concurrent
+import scala.concurrent.{ Future, Promise }
+import scala.concurrent.ExecutionContext.Implicits.global
 import java.util.concurrent.ConcurrentLinkedQueue
 
 class UimaStatusCallbackListener(
     val engine: UimaAsynchronousEngine,
-    val outputDir: Option[String] = None) extends UimaAsBaseCallbackListener {
+    val outputDir: Option[String] = None,
+    val logCas: Boolean = true) extends UimaAsBaseCallbackListener {
   import collection.JavaConversions._
 
   val startTime = System.nanoTime() / 1000000
+  val casMap: concurrent.Map[String, Long] = concurrent.TrieMap()
+  val queue = new ConcurrentLinkedQueue[JCas]()
+  val promisedIterator = Promise[Iterator[JCas]]
+
   var entityCount: Int = 0
   var size: Long = 0
-  var logCas: Boolean = true
-  val casMap: concurrent.Map[String, Long] = concurrent.TrieMap()
 
   def stopOnErr(status: EntityProcessStatus, msg: String, ignoreErrors: Boolean = false)(block: => Unit): Unit = {
     if (status != null && status.isException()) {
@@ -42,6 +48,8 @@ class UimaStatusCallbackListener(
 
   override def collectionProcessComplete(status: EntityProcessStatus): Unit =
     stopOnErr(status, "Error on collection process complete call to remote service:") {
+      promisedIterator.success(queue.iterator())
+
       System.out.print("Completed " + entityCount + " documents")
       if (size > 0) {
         System.out.print("; " + size + " characters");
@@ -91,6 +99,8 @@ class UimaStatusCallbackListener(
           size += docText.length
         }
       }
+
+      queue.add(cas.getJCas)
     }
 
   override def onBeforeMessageSend(status: UimaASProcessStatus): Unit = {

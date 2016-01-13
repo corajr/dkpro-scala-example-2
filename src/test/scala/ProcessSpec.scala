@@ -7,13 +7,13 @@ class ProcessSpec extends FunSpec with Matchers {
   val corpusDir =
     getClass().getClassLoader().getResource("inaugural/").getPath()
 
-  def time[R](block: => R): Long = {  
+  def time[R](block: => R): Long = {
       val t0 = System.nanoTime()
       block
       val t1 = System.nanoTime()
       ((t1 - t0) / 1e6).toLong  // ms
-  }    
-    
+  }
+
   describe("Process") {
     describe("lemmatize") {
       describe("when passed a Corpus") {
@@ -40,7 +40,7 @@ class ProcessSpec extends FunSpec with Matchers {
           val lemmas = jcas.select(classOf[Lemma]).take(5).map(_.getValue).toSeq
           lemmas shouldBe Seq("fellow", "-", "citizen", "of", "the")
         }
-        
+
         it("should be able to run multithreaded") {
           import Process.EnrichedJCas
 
@@ -48,17 +48,17 @@ class ProcessSpec extends FunSpec with Matchers {
           val jcasIterator = Process.lemmatize.runMultiThread(corpus)
           val jcas = jcasIterator.next()
           val lemmas = jcas.select(classOf[Lemma]).take(5).map(_.getValue).toSeq
-          lemmas shouldBe Seq("fellow", "-", "citizen", "of", "the")          
+          lemmas shouldBe Seq("fellow", "-", "citizen", "of", "the")
         }
 
       }
     }
-    
+
     describe("lemmatizeAndNER") {
       describe("when passed a corpus") {
         it("should return the expected lemmas and named entities from the corpus") {
           import Process.EnrichedJCas
-          
+
           val corpus = Corpus.fromDir(corpusDir)
           val jcasIterator = Process.lemmatizeAndNER(corpus)
           jcasIterator
@@ -70,12 +70,12 @@ class ProcessSpec extends FunSpec with Matchers {
               lemmas shouldBe Vector("mr.", "vice", "president", ",", "mr.")
             }
         }
-        
+
         it("should run faster when multithreaded") {
           import Process.EnrichedJCas
-          
+
           val corpus = Corpus.fromDir(corpusDir)
-          
+
           val singleThreadMillis = time {
             val singleIterator = Process.lemmatizeAndNER.runSingleThread(corpus)
             for (_ <- singleIterator) { /* exhaust iterator */ }
@@ -85,7 +85,7 @@ class ProcessSpec extends FunSpec with Matchers {
             val multiThreadIterator = Process.lemmatizeAndNER.runMultiThread(corpus)
             for (_ <- multiThreadIterator) { /* exhaust iterator */ }
           }
-          
+
           multiThreadMillis should be < singleThreadMillis - 10000
         }
       }

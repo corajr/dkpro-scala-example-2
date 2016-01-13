@@ -8,7 +8,7 @@ import org.apache.uima.cas.SerialFormat
 import org.apache.uima.resourceSpecifier.factory.SerializationStrategy
 import scala.xml.XML
 
-class UimaAsyncDeploymentConfigSpec extends FunSpec with Matchers with PropertyChecks {
+class UimaAsyncDeploymentConfigSpec extends FunSpec with Matchers with PropertyChecks with UimaAppContextGens {
   describe("UimaAsyncDeploymentConfig") {
     it("should generate an XML file with default config") {
       val appCtx = UimaAppContext()
@@ -24,30 +24,6 @@ class UimaAsyncDeploymentConfigSpec extends FunSpec with Matchers with PropertyC
       new java.io.File(engineXML) shouldBe 'exists
     }
 
-    val appCtxs = for {
-      dd2SpringXsltFilePath <- Gen.alphaStr
-      saxonClasspath <- Gen.alphaStr
-      serverUri <- Gen.alphaStr
-      endpoint <- Gen.alphaStr
-      casPoolSize <- Gen.posNum[Int]
-      casInitialHeapSize <- Gen.posNum[Int]
-      applicationName <- Gen.alphaStr
-      getMetaTimeout <- Gen.posNum[Int]
-      timeout <- Gen.option(Gen.posNum[Int])
-      cpcTimeout <- Gen.option(Gen.posNum[Int])
-      serializationStrategy <- Gen.oneOf(SerializationStrategy.values())
-    } yield UimaAppContext(dd2SpringXsltFilePath = dd2SpringXsltFilePath,
-        saxonClasspath = saxonClasspath,
-        serverUri = serverUri,
-        endpoint = endpoint,
-        casPoolSize = casPoolSize,
-        casInitialHeapSize = casInitialHeapSize,
-        applicationName = applicationName,
-        getMetaTimeout = getMetaTimeout,
-        timeout = timeout,
-        cpcTimeout = cpcTimeout,
-        serializationStrategy = serializationStrategy)
-
     it("should generate an XML file with specified config") {
       forAll(appCtxs) { appCtx =>
         val config = UimaAsyncDeploymentConfig(Seq(), appCtx = appCtx)
@@ -56,7 +32,7 @@ class UimaAsyncDeploymentConfigSpec extends FunSpec with Matchers with PropertyC
         val deploy = xml \\ "analysisEngineDeploymentDescription" \\ "deployment"
         (deploy \\ "casPool" \@ "numberOfCASes") shouldBe appCtx.casPoolSize.toString
         (deploy \\ "casPool" \@ "initialFsHeapSize") shouldBe (appCtx.casInitialHeapSize * 4).toString
-        (deploy \\ "service" \\ "inputQueue" \@ "brokerURL") shouldBe appCtx.serverUri
+        (deploy \\ "service" \\ "inputQueue" \@ "brokerURL") shouldBe appCtx.serverUri.toString
         (deploy \\ "service" \\ "inputQueue" \@ "endpoint") shouldBe appCtx.endpoint
         val engineXML = deploy \\ "service" \\ "topDescriptor" \\ "import" \@ "location"
         new java.io.File(engineXML) shouldBe 'exists

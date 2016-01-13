@@ -6,39 +6,44 @@ import org.apache.uima.jcas.JCas
 import org.apache.uima.jcas.cas.TOP
 import de.tudarmstadt.ukp.dkpro.core.clearnlp.{ClearNlpSegmenter, ClearNlpLemmatizer, ClearNlpPosTagger}
 import de.tudarmstadt.ukp.dkpro.core.opennlp.OpenNlpNameFinder
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
 
 case class Process(engines: Seq[AnalysisEngineDescription]) {
   import scala.collection.JavaConversions._
-  
+
   def apply(corpus: Corpus) = runSingleThread(corpus)
-  
+
   def runSingleThread(corpus: Corpus): Iterator[JCas] =
     iteratePipeline(
       corpus.reader,
       engines: _*).iterator()
-  
-  def runMultiThread(corpus: Corpus): Iterator[JCas] =
-    ???
+
+  def runMultiThread(corpus: Corpus): Iterator[JCas] = {
+    val uimaAS = new UimaAsync()
+    val futureIterator = uimaAS.start(corpus, this)
+    Await.result(futureIterator, Duration.Inf)
+  }
 }
 
 object Process {
   val lemmatize =
     Process(
       createEngineDescription(classOf[ClearNlpSegmenter]),
-      createEngineDescription(classOf[ClearNlpPosTagger]), 
-      createEngineDescription(classOf[ClearNlpLemmatizer]) 
+      createEngineDescription(classOf[ClearNlpPosTagger]),
+      createEngineDescription(classOf[ClearNlpLemmatizer])
     )
 
   val lemmatizeAndNER =
     Process(
       createEngineDescription(classOf[ClearNlpSegmenter]),
-      createEngineDescription(classOf[ClearNlpPosTagger]), 
+      createEngineDescription(classOf[ClearNlpPosTagger]),
       createEngineDescription(classOf[ClearNlpLemmatizer]),
-      createEngineDescription(classOf[OpenNlpNameFinder]) 
-    )    
-    
+      createEngineDescription(classOf[OpenNlpNameFinder])
+    )
+
   def apply(engines: AnalysisEngineDescription*)(implicit d: DummyImplicit) = new Process(Seq(engines: _*))
-  
+
   implicit class EnrichedJCas(jcas: JCas) {
     import scala.collection.JavaConversions._
 
