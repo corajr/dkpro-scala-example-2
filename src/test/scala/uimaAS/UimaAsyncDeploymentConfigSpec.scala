@@ -15,8 +15,8 @@ class UimaAsyncDeploymentConfigSpec extends FunSpec with Matchers with PropertyC
       val config = UimaAsyncDeploymentConfig(Seq(), appCtx = appCtx)
       val fname = config.toXML()
       val xml = XML.loadFile(fname)
-      
-      val deploy = xml \\ "analysisEngineDeploymentDescription" \\ "deployment" 
+
+      val deploy = xml \\ "analysisEngineDeploymentDescription" \\ "deployment"
       (deploy \\ "casPool" \@ "numberOfCASes") shouldBe "1"
       (deploy \\ "service" \\ "inputQueue" \@ "endpoint") shouldBe appCtx.endpoint
 
@@ -35,7 +35,7 @@ class UimaAsyncDeploymentConfigSpec extends FunSpec with Matchers with PropertyC
       getMetaTimeout <- Gen.posNum[Int]
       timeout <- Gen.option(Gen.posNum[Int])
       cpcTimeout <- Gen.option(Gen.posNum[Int])
-      serializationStrategy <- Gen.oneOf(SerializationStrategy.values())    
+      serializationStrategy <- Gen.oneOf(SerializationStrategy.values())
     } yield UimaAppContext(dd2SpringXsltFilePath = dd2SpringXsltFilePath,
         saxonClasspath = saxonClasspath,
         serverUri = serverUri,
@@ -47,19 +47,20 @@ class UimaAsyncDeploymentConfigSpec extends FunSpec with Matchers with PropertyC
         timeout = timeout,
         cpcTimeout = cpcTimeout,
         serializationStrategy = serializationStrategy)
-     
+
     it("should generate an XML file with specified config") {
       forAll(appCtxs) { appCtx =>
         val config = UimaAsyncDeploymentConfig(Seq(), appCtx = appCtx)
         val fname = config.toXML()
-        val xml = XML.loadFile(fname)    
-        val deploy = xml \\ "analysisEngineDeploymentDescription" \\ "deployment" 
+        val xml = XML.loadFile(fname)
+        val deploy = xml \\ "analysisEngineDeploymentDescription" \\ "deployment"
         (deploy \\ "casPool" \@ "numberOfCASes") shouldBe appCtx.casPoolSize.toString
         (deploy \\ "casPool" \@ "initialFsHeapSize") shouldBe (appCtx.casInitialHeapSize * 4).toString
+        (deploy \\ "service" \\ "inputQueue" \@ "brokerURL") shouldBe appCtx.serverUri
         (deploy \\ "service" \\ "inputQueue" \@ "endpoint") shouldBe appCtx.endpoint
         val engineXML = deploy \\ "service" \\ "topDescriptor" \\ "import" \@ "location"
         new java.io.File(engineXML) shouldBe 'exists
       }
     }
-  }  
+  }
 }

@@ -18,10 +18,11 @@ case class UimaAsyncDeploymentConfig(
     val deployDescriptor = DeploymentDescriptorFactory.createAggregateDeploymentDescriptor(
       serviceCtx
     )
-    
+
     val engineDescriptor = createEngineDescription(engineDescs: _*)
     val engineXML = Util.tmpWriter { out => engineDescriptor.toXML(out) }
-    
+
+    deployDescriptor.setBroker(appCtx.serverUri)
     deployDescriptor.setInitialHeapSize(appCtx.casInitialHeapSize * 4)
     deployDescriptor.setCasPoolSize(appCtx.casPoolSize)
     deployDescriptor.setServiceAnalysisEngineDescriptor(engineXML)
