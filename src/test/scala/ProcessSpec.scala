@@ -37,8 +37,8 @@ class ProcessSpec extends FunSpec with Matchers with BrokerFixture {
           val corpus = Corpus.fromDir(corpusDir)
           val jcasIterator = Process.lemmatize(corpus)
           val jcas = jcasIterator.next()
-          val lemmas = jcas.select(classOf[Lemma]).take(5).map(_.getValue).toSeq
-          lemmas shouldBe Seq("fellow", "-", "citizen", "of", "the")
+          val lemmas = jcas.select(classOf[Lemma]).take(5).map(_.getValue).toVector
+          lemmas shouldBe Vector("fellow", "-", "citizen", "of", "the")
         }
 
         it("should be able to run multithreaded") {
@@ -47,8 +47,8 @@ class ProcessSpec extends FunSpec with Matchers with BrokerFixture {
           val corpus = Corpus.fromDir(corpusDir)
           val jcasIterator = Process.lemmatize.runMultiThread(corpus)
           val jcas = jcasIterator.next()
-          val lemmas = jcas.select(classOf[Lemma]).take(5).map(_.getValue).toSeq
-          lemmas shouldBe Seq("fellow", "-", "citizen", "of", "the")
+          val lemmas = jcas.select(classOf[Lemma]).take(5).map(_.getValue).toVector
+          lemmas shouldBe Vector("fellow", "-", "citizen", "of", "the")
         }
 
       }

@@ -12,17 +12,20 @@ import java.util.concurrent.ConcurrentLinkedQueue
 
 class UimaStatusCallbackListener(
     val engine: UimaAsynchronousEngine,
-    val outputDir: Option[String] = None,
+    val maybeOutputDir: Option[String] = None,
     val logCas: Boolean = true) extends UimaAsBaseCallbackListener {
   import collection.JavaConversions._
 
   val startTime = System.nanoTime() / 1000000
   val casMap: concurrent.Map[String, Long] = concurrent.TrieMap()
-  val queue = new ConcurrentLinkedQueue[JCas]()
+  val queue = new ConcurrentLinkedQueue[String]()
   val promisedIterator = Promise[Iterator[JCas]]
 
   var entityCount: Int = 0
   var size: Long = 0
+
+  val outputDir: Util.OutputDir =
+    maybeOutputDir.fold(Util.TmpDir.create())(Util.UserSpecifiedDir)
 
   def stopOnErr(status: EntityProcessStatus, msg: String, ignoreErrors: Boolean = false)(block: => Unit): Unit = {
     if (status != null && status.isException()) {
@@ -48,7 +51,10 @@ class UimaStatusCallbackListener(
 
   override def collectionProcessComplete(status: EntityProcessStatus): Unit =
     stopOnErr(status, "Error on collection process complete call to remote service:") {
-      promisedIterator.success(queue.iterator())
+      promisedIterator.success(queue.iterator().map { path =>
+        val cas = engine.getCAS()
+        Util.deserializeCasBinary(cas, path)
+      })
 
       System.out.print("Completed " + entityCount + " documents")
       if (size > 0) {
@@ -88,19 +94,17 @@ class UimaStatusCallbackListener(
             System.out.print((entityCount + 1) + " processed\n");
           }
         }
-
-        outputDir.foreach { dir =>
-          Util.serializeCas(cas, dir, entityCount)
-        }
-
-        entityCount = entityCount + 1
-        val docText = cas.getDocumentText
-        if (docText != null) {
-          size += docText.length
-        }
       }
 
-      queue.add(cas.getJCas)
+      val serialized = Util.serializeCasBinary(cas, outputDir.path, Some(entityCount))
+
+      entityCount = entityCount + 1
+      val docText = cas.getDocumentText
+      if (docText != null) {
+        size += docText.length
+      }
+
+      queue.add(serialized)
     }
 
   override def onBeforeMessageSend(status: UimaASProcessStatus): Unit = {

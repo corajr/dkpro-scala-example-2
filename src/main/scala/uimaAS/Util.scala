@@ -1,11 +1,28 @@
 package uimaAS
 
 import java.io._
+import java.nio.file.Files
 import scala.util.Try
 import org.apache.uima.cas.CAS
 import org.apache.uima.cas.impl.XmiCasSerializer
+import org.apache.uima.cas.impl.XmiCasDeserializer
+import org.apache.uima.cas.impl.Serialization
+import org.apache.uima.jcas.JCas
 
 object Util {
+  sealed trait OutputDir {
+    def path: String
+  }
+  case class TmpDir(path: String) extends OutputDir
+  case class UserSpecifiedDir(path: String) extends OutputDir
+
+  object TmpDir {
+    def create(): OutputDir = {
+      val tmpDir = Files.createTempDirectory("uima-CASes")
+      TmpDir(tmpDir.toString)
+    }
+  }
+
   def tmpFile(block: File => Unit): String = {
     val configFile = File.createTempFile("uimaTemp", ".xml")
     configFile.deleteOnExit()
@@ -14,18 +31,24 @@ object Util {
 
     configFile.toString
   }
-  
+
   def tmpWriter(block: java.io.Writer => Unit): String = tmpFile { configFile =>
     val out = new java.io.BufferedWriter(new FileWriter(configFile))
     try block(out)
-    finally out.close()    
+    finally out.close()
   }
-  
-  def toXmlFile[T <: { def toXML(): String }](t: T): String = tmpWriter { out =>    
+
+  def toXmlFile[T <: { def toXML(): String }](t: T): String = tmpWriter { out =>
     out.write(t.toXML())
   }
-  
-  def serializeCas(cas: CAS, outputDir: String, entityCount: Long = 0): Unit = {
+
+  def serializeCasXMI(cas: CAS, outputDir: String, entityCount: Option[Long] = None): String =
+    serializeCas(cas, outputDir, entityCount)(XmiCasSerializer.serialize _)
+
+  def serializeCasBinary(cas: CAS, outputDir: String, entityCount: Option[Long] = None): String =
+    serializeCas(cas, outputDir, entityCount)(Serialization.serializeCAS _)
+
+  def serializeCas(cas: CAS, outputDir: String, entityCount: Option[Long])(block: (CAS, OutputStream) => Unit): String = {
     // try to retrieve the filename of the input file from the CAS
     val outFile = (for {
       srcDocInfoType <- Option(cas.getTypeSystem().getType(
@@ -50,7 +73,7 @@ object Util {
     try {
       val outStream = new FileOutputStream(outFile)
       try {
-        XmiCasSerializer.serialize(cas, outStream)
+        block(cas, outStream)
       } finally {
         outStream.close();
       }
@@ -59,5 +82,23 @@ object Util {
         System.err.println("Could not save CAS to XMI file");
         e.printStackTrace();
     }
+
+    outFile.getPath
+  }
+
+  def deserializeCasBinary(cas: CAS, path: String): JCas =
+    deserializeCas(cas, path) { (cas, istream) =>
+      Serialization.deserializeCAS(cas, istream)
+    }
+
+  def deserializeCasXMI(cas: CAS, path: String): JCas =
+    deserializeCas(cas, path) { (cas, istream) =>
+      XmiCasDeserializer.deserialize(istream, cas)
+    }
+
+  def deserializeCas(cas: CAS, path: String)(block: (CAS, InputStream) => Unit): JCas = {
+    val istream = new FileInputStream(path)
+    block(cas, istream)
+    cas.getJCas
   }
 }
