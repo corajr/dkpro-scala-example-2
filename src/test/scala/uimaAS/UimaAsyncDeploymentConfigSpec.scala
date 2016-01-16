@@ -16,12 +16,15 @@ class UimaAsyncDeploymentConfigSpec extends FunSpec with Matchers with PropertyC
       val fname = config.toXML()
       val xml = XML.loadFile(fname)
 
+      (xml \\ "name" text) should not be empty
+
       val deploy = xml \\ "analysisEngineDeploymentDescription" \\ "deployment"
       (deploy \\ "casPool" \@ "numberOfCASes") shouldBe "1"
       (deploy \\ "service" \\ "inputQueue" \@ "endpoint") shouldBe appCtx.endpoint
 
       val engineXML = deploy \\ "service" \\ "topDescriptor" \\ "import" \@ "location"
       new java.io.File(engineXML) shouldBe 'exists
+      (deploy \\ "service" \\ "topDescriptor" \\ "import" \@ "name") should not be empty
     }
 
     it("should generate an XML file with specified config") {
@@ -29,6 +32,8 @@ class UimaAsyncDeploymentConfigSpec extends FunSpec with Matchers with PropertyC
         val config = UimaAsyncDeploymentConfig(Seq(), appCtx = appCtx)
         val fname = config.toXML()
         val xml = XML.loadFile(fname)
+        (xml \\ "name" text) should not be empty
+
         val deploy = xml \\ "analysisEngineDeploymentDescription" \\ "deployment"
         (deploy \\ "casPool" \@ "numberOfCASes") shouldBe appCtx.casPoolSize.toString
         (deploy \\ "casPool" \@ "initialFsHeapSize") shouldBe (appCtx.casInitialHeapSize * 4).toString

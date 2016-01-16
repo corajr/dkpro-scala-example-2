@@ -8,7 +8,7 @@ import java.net.{URI, URL}
 case class UimaAppContext(
   dd2SpringXsltFilePath: URL = getClass.getClassLoader.getResource("dd2spring.xsl"),
   saxonClasspath: URL = getClass.getClassLoader.getResource("saxon8.jar"),
-  serverUri: URI = new URI("vm://localhost?create=false"),
+  serverUri: URI = new URI("tcp://localhost:61616"),
   endpoint: String = "uimaAS",
   casPoolSize: Int = 1,
   casInitialHeapSize: Int = 500000, // number of 4-byte words = 2000000 bytes (2 MB)

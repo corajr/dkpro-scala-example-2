@@ -3,7 +3,7 @@ import de.tudarmstadt.ukp.dkpro.core.api.metadata.`type`.DocumentMetaData
 import de.tudarmstadt.ukp.dkpro.core.api.ner.`type`.NamedEntity
 import de.tudarmstadt.ukp.dkpro.core.api.segmentation.`type`.Lemma
 
-class ProcessSpec extends FunSpec with Matchers {
+class ProcessSpec extends FunSpec with Matchers with BrokerFixture {
   val corpusDir =
     getClass().getClassLoader().getResource("inaugural/").getPath()
 

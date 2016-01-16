@@ -8,7 +8,7 @@ import org.apache.uima.resourceSpecifier.factory.DeploymentDescriptorFactory
 case class UimaAsyncDeploymentConfig(
   engineDescs: Seq[AnalysisEngineDescription],
   appCtx: UimaAppContext = UimaAppContext(),
-  name: String = "",
+  name: String = "uima-service",
   description: String = "",
   descriptor: String = "",
   async: Boolean = true
@@ -20,6 +20,7 @@ case class UimaAsyncDeploymentConfig(
     )
 
     val engineDescriptor = createEngineDescription(engineDescs: _*)
+    engineDescriptor.setAnnotatorImplementationName(name)
     val engineXML = Util.tmpWriter { out => engineDescriptor.toXML(out) }
 
     deployDescriptor.setBroker(appCtx.serverUri.toString)

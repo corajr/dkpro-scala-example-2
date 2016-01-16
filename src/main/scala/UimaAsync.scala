@@ -54,6 +54,7 @@ object UimaAsync {
     val broker = new BrokerService
     broker.setBrokerName("localhost")
     broker.setUseJmx(false)
+    broker.addConnector("tcp://localhost:61616")
     broker.start()
     this.broker = Some(broker)
   }

@@ -3,10 +3,12 @@ import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.SpanSugar._
 import prop._
 import org.scalacheck.Gen
+import scala.xml.XML
+
 import org.apache.uima.aae.client.UimaAsynchronousEngine
 import org.apache.uima.cas.SerialFormat
+import org.apache.uima.fit.factory.AnalysisEngineFactory.createEngineDescription
 import org.apache.uima.resourceSpecifier.factory.SerializationStrategy
-import scala.xml.XML
 
 trait BrokerFixture extends BeforeAndAfterAll { this: Suite =>
   override def beforeAll() {
@@ -39,7 +41,8 @@ class UimaAsyncSpec extends FunSpec with Matchers with PropertyChecks with Broke
     describe("on calling `start(corpus, process)`") {
       it("should process the corpus, returning results as a Future[Iterator[JCas]]") {
         val uimaAsync = new UimaAsync()
-        val futureIterator = uimaAsync.start(Corpus.fromDir(corpusDir), Process())
+        val dummyDesc = createEngineDescription(classOf[uimaAS.DummyAE])
+        val futureIterator = uimaAsync.start(Corpus.fromDir(corpusDir), Process(dummyDesc))
         whenReady(futureIterator, timeout(1 minute)) { it =>
           it.size shouldBe 56
         }
