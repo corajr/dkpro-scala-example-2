@@ -10,13 +10,13 @@ case class UimaAppContext(
   saxonClasspath: URL = getClass.getClassLoader.getResource("saxon8.jar"),
   serverUri: URI = new URI("tcp://localhost:61616"),
   endpoint: String = "uimaAS",
-  casPoolSize: Int = 1,
+  casPoolSize: Int = 2,
   casInitialHeapSize: Int = 500000, // number of 4-byte words = 2000000 bytes (2 MB)
   applicationName: String = "",
   getMetaTimeout: Int = 60000,
   timeout: Option[Int] = None,
   cpcTimeout: Option[Int] = None,
-  serializationStrategy: SerializationStrategy = SerializationStrategy.xmi
+  serializationStrategy: SerializationStrategy = SerializationStrategy.binary
 ) {
   import collection.JavaConversions.mutableMapAsJavaMap
 

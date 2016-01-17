@@ -50,7 +50,6 @@ class ProcessSpec extends FunSpec with Matchers with BrokerFixture {
           val lemmas = jcas.select(classOf[Lemma]).take(5).map(_.getValue).toVector
           lemmas shouldBe Vector("fellow", "-", "citizen", "of", "the")
         }
-
       }
     }
 
