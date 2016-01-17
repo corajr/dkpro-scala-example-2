@@ -8,19 +8,20 @@ import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
 import uimaAS._
 import org.apache.uima.jcas.JCas
+import java.net.URI
 
 class UimaAsync(val config: UimaAppContext = UimaAppContext()) {
   val engine: UimaAsynchronousEngine = new BaseUIMAAsynchronousEngine_impl
-  val statusListener = new UimaStatusCallbackListener(this.engine)
   val configMap = config.toMap
   var springContainerId: Option[String] = None
 
-  def start(corpus: Corpus, process: Process): Future[Iterator[JCas]] = {
+  def start[T](corpus: Corpus, process: Process, block: Util.Block[T], collectionTotal: Option[Int] = None): Future[Util.Results[T]] = {
     if (UimaAsync.broker.isEmpty) {
       throw new IllegalStateException("Broker must be started before instantiating UimaAsync")
     }
 
     val collectionReader = UIMAFramework.produceCollectionReader(corpus.reader)
+    val statusListener = new UimaStatusCallbackListener(this.engine, block, collectionTotal = collectionTotal)
     engine.setCollectionReader(collectionReader)
     engine.addStatusCallbackListener(statusListener)
 
@@ -32,7 +33,7 @@ class UimaAsync(val config: UimaAppContext = UimaAppContext()) {
     engine.initialize(configMap)
     engine.process()
 
-    val f = statusListener.promisedIterator.future
+    val f = statusListener.promisedResults.future
 
     f onSuccess {
       case _ => stop()
@@ -48,15 +49,18 @@ class UimaAsync(val config: UimaAppContext = UimaAppContext()) {
 }
 
 object UimaAsync {
+  val uri = new URI("tcp://localhost:61616")
   var broker: Option[BrokerService] = None
 
   def start(): Unit = {
-    val broker = new BrokerService
-    broker.setBrokerName("localhost")
-    broker.setUseJmx(false)
-    broker.addConnector("tcp://localhost:61616")
-    broker.start()
-    this.broker = Some(broker)
+    if (broker.isEmpty) {
+      val brokerService = new BrokerService
+      brokerService.setBrokerName("localhost")
+      brokerService.setUseJmx(false)
+      brokerService.addConnector(uri.toString)
+      brokerService.start()
+      broker = Some(brokerService)
+    }
   }
 
   def stop(): Unit = broker.foreach { b => b.stop() }

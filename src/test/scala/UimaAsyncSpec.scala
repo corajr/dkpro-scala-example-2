@@ -39,11 +39,11 @@ class UimaAsyncSpec extends FunSpec with Matchers with PropertyChecks with Broke
     }
 
     describe("on calling `start(corpus, process)`") {
-      it("should process the corpus, returning results as a Future[Iterator[JCas]]") {
+      it("should process the corpus, returning results as a Future[Map[String, T]]") {
         val uimaAsync = new UimaAsync()
         val dummyDesc = createEngineDescription(classOf[uimaAS.DummyAE])
-        val futureIterator = uimaAsync.start(Corpus.fromDir(corpusDir), Process(dummyDesc))
-        whenReady(futureIterator, timeout(1 minute)) { it =>
+        val futureResults = uimaAsync.start(Corpus.fromDir(corpusDir), Process(dummyDesc), uimaAS.Util.noOp)
+        whenReady(futureResults, timeout(1 minute)) { it =>
           it.size shouldBe 56
         }
       }

@@ -21,12 +21,10 @@ class ProcessSpec extends FunSpec with Matchers with BrokerFixture {
           import Process.EnrichedJCas
 
           val corpus = Corpus.fromDir(corpusDir)
-          val lemmaMap = (for {
-            jcas <- Process.lemmatize(corpus)
-            metadata = jcas.selectSingle(classOf[DocumentMetaData])
-            title = metadata.getDocumentTitle()
-            lemmas = jcas.select(classOf[Lemma])
-          } yield title -> lemmas.size).toMap
+          val lemmaMap = (Process.lemmatize(corpus) { jcas =>
+            val lemmas = jcas.select(classOf[Lemma])
+            lemmas.size
+          })
           lemmaMap should have size 56
           all (lemmaMap.values) should be > 0
         }
@@ -35,20 +33,21 @@ class ProcessSpec extends FunSpec with Matchers with BrokerFixture {
           import Process.EnrichedJCas
 
           val corpus = Corpus.fromDir(corpusDir)
-          val jcasIterator = Process.lemmatize(corpus)
-          val jcas = jcasIterator.next()
-          val lemmas = jcas.select(classOf[Lemma]).take(5).map(_.getValue).toVector
-          lemmas shouldBe Vector("fellow", "-", "citizen", "of", "the")
+          val allLemmas = (Process.lemmatize(corpus) { jcas =>
+            jcas.select(classOf[Lemma]).take(5).map(_.getValue).toVector
+          })
+
+          allLemmas("1789-Washington.txt") shouldBe Vector("fellow", "-", "citizen", "of", "the")
         }
 
         it("should be able to run multithreaded") {
           import Process.EnrichedJCas
 
           val corpus = Corpus.fromDir(corpusDir)
-          val jcasIterator = Process.lemmatize.runMultiThread(corpus)
-          val jcas = jcasIterator.next()
-          val lemmas = jcas.select(classOf[Lemma]).take(5).map(_.getValue).toVector
-          lemmas shouldBe Vector("fellow", "-", "citizen", "of", "the")
+          val allLemmas = Process.lemmatize.runMultiThread(corpus) { jcas =>
+            jcas.select(classOf[Lemma]).take(5).map(_.getValue).toVector
+          }
+          allLemmas("1789-Washington.txt") shouldBe Vector("fellow", "-", "citizen", "of", "the")
         }
       }
     }
@@ -59,15 +58,20 @@ class ProcessSpec extends FunSpec with Matchers with BrokerFixture {
           import Process.EnrichedJCas
 
           val corpus = Corpus.fromDir(corpusDir)
-          val jcasIterator = Process.lemmatizeAndNER(corpus)
-          jcasIterator
-            .find(_.selectSingle(classOf[DocumentMetaData]).getDocumentTitle == "1949-Truman.txt")
-            .fold(fail("No JCas matched")) { jcas =>
+          val results = Process.lemmatizeAndNER(corpus) { jcas =>
+            if (jcas.selectSingle(classOf[DocumentMetaData]).getDocumentTitle == "1949-Truman.txt") {
               val entities = jcas.select(classOf[NamedEntity]).take(5).map(_.getCoveredText).toVector
               val lemmas = jcas.select(classOf[Lemma]).take(5).map(_.getValue).toVector
-              entities shouldBe Vector("Communism", "Communism", "Democracy", "Communism", "Communism")
-              lemmas shouldBe Vector("mr.", "vice", "president", ",", "mr.")
+              Some((entities, lemmas))
+            } else {
+              None
             }
+          }
+          val res = results.values.find(_.nonEmpty).flatten
+          res.fold(fail("No JCas matched")) { case (entities, lemmas) =>
+            entities shouldBe Vector("Communism", "Communism", "Democracy", "Communism", "Communism")
+            lemmas shouldBe Vector("mr.", "vice", "president", ",", "mr.")
+          }
         }
 
         it("should run faster when multithreaded") {
@@ -76,13 +80,11 @@ class ProcessSpec extends FunSpec with Matchers with BrokerFixture {
           val corpus = Corpus.fromDir(corpusDir)
 
           val singleThreadMillis = time {
-            val singleIterator = Process.lemmatizeAndNER.runSingleThread(corpus)
-            for (_ <- singleIterator) { /* exhaust iterator */ }
+            val singleIterator = Process.lemmatizeAndNER.runSingleThread(corpus)(_ => Unit)
           }
 
           val multiThreadMillis = time {
-            val multiThreadIterator = Process.lemmatizeAndNER.runMultiThread(corpus)
-            for (_ <- multiThreadIterator) { /* exhaust iterator */ }
+            val multiThreadIterator = Process.lemmatizeAndNER.runMultiThread(corpus)(_ => Unit)
           }
 
           multiThreadMillis should be < singleThreadMillis - 10000

@@ -2,6 +2,7 @@ package uimaAS
 
 import java.io._
 import java.nio.file.Files
+import java.util.concurrent.atomic.AtomicInteger
 import scala.util.Try
 import org.apache.uima.cas.CAS
 import org.apache.uima.cas.impl.XmiCasSerializer
@@ -22,6 +23,16 @@ object Util {
       TmpDir(tmpDir.toString)
     }
   }
+
+  type TaggedAnalysis[T] = (String, T)
+  type Block[T] = JCas => TaggedAnalysis[T]
+  type Results[T] = Map[String, T]
+
+  private val uniqueID = new AtomicInteger()
+
+  def getUniqueID: Int = uniqueID.getAndIncrement
+
+  val noOp: Block[Unit] = { jcas => getUniqueID.toString -> Unit }
 
   def tmpFile(block: File => Unit): String = {
     val configFile = File.createTempFile("uimaTemp", ".xml")

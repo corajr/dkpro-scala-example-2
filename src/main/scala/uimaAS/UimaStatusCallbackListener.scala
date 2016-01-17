@@ -9,17 +9,26 @@ import scala.collection.concurrent
 import scala.concurrent.{ Future, Promise }
 import scala.concurrent.ExecutionContext.Implicits.global
 import java.util.concurrent.ConcurrentLinkedQueue
+import com.typesafe.scalalogging.Logger
+import org.slf4j.LoggerFactory
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
 
-class UimaStatusCallbackListener(
+class UimaStatusCallbackListener[T](
     val engine: UimaAsynchronousEngine,
+    val block: Util.Block[T] = Util.noOp,
     val maybeOutputDir: Option[String] = None,
+    val collectionTotal: Option[Int] = None,
     val logCas: Boolean = true) extends UimaAsBaseCallbackListener {
   import collection.JavaConversions._
 
   val startTime = System.nanoTime() / 1000000
   val casMap: concurrent.Map[String, Long] = concurrent.TrieMap()
-  val queue = new ConcurrentLinkedQueue[String]()
-  val promisedIterator = Promise[Iterator[JCas]]
+  val queue = new ConcurrentLinkedQueue[Util.TaggedAnalysis[T]]()
+  val promisedCompletion = Promise[Unit]
+  val promisedResults = Promise[Util.Results[T]]
+
+  val logger = Logger(LoggerFactory.getLogger(""))
 
   var entityCount: Int = 0
   var size: Long = 0
@@ -29,14 +38,14 @@ class UimaStatusCallbackListener(
 
   def stopOnErr(status: EntityProcessStatus, msg: String, ignoreErrors: Boolean = false)(block: => Unit): Unit = {
     if (status != null && status.isException()) {
-      System.err.println(msg)
+      logger.error(msg)
       val exceptions = status.getExceptions()
       for (e <- exceptions) {
-        e.printStackTrace()
+        logger.error(e.toString)
       }
 
       if (!ignoreErrors) {
-        System.err.println("Terminating Client...")
+        logger.error("Terminating Client...")
         engine.stop()
       } else {
         block
@@ -51,23 +60,26 @@ class UimaStatusCallbackListener(
 
   override def collectionProcessComplete(status: EntityProcessStatus): Unit =
     stopOnErr(status, "Error on collection process complete call to remote service:") {
-      promisedIterator.success(queue.iterator().map { path =>
-        val cas = engine.getCAS()
-        Util.deserializeCasBinary(cas, path)
-      })
-
-      System.out.print("Completed " + entityCount + " documents")
-      if (size > 0) {
-        System.out.print("; " + size + " characters");
+      if (collectionTotal.nonEmpty) {
+        Await.ready(promisedCompletion.future, Duration.Inf)
       }
-      System.out.println();
+      promisedResults.success(queue.toMap)
+      //      promisedIterator.success(queue.iterator().map { path =>
+      //        val cas = engine.getCAS()
+      //        Util.deserializeCasBinary(cas, path)
+      //      })
+
+      logger.info(s"Completed $entityCount documents")
+      if (size > 0) {
+        logger.info(s"; $size characters")
+      }
       val elapsedTime = System.nanoTime() / 1000000 - startTime
-      System.out.println("Time Elapsed : " + elapsedTime + " ms ");
+      logger.info("Time Elapsed : " + elapsedTime + " ms ");
 
       val perfReport = engine.getPerformanceReport()
       if (perfReport != null) {
-        System.out.println("\n\n ------------------ PERFORMANCE REPORT ------------------\n");
-        System.out.println(perfReport);
+        logger.info("\n\n ------------------ PERFORMANCE REPORT ------------------\n");
+        logger.info(perfReport);
       }
     }
 
@@ -86,25 +98,32 @@ class UimaStatusCallbackListener(
         if (casId != null) {
           val current = System.nanoTime() / 1000000 - startTime
           casMap.get(casId).foreach { start =>
-            System.out.println(ip + "\t" + start + "\t" + (current - start))
+            logger.debug(s"$ip \t $start \t ${current - start}")
           }
         } else {
-          System.out.print(".");
+          logger.debug(".");
           if (0 == (entityCount + 1) % 50) {
-            System.out.print((entityCount + 1) + " processed\n");
+            logger.info((entityCount + 1) + " processed\n");
           }
         }
       }
 
-      val serialized = Util.serializeCasBinary(cas, outputDir.path, Some(entityCount))
+      //      val serialized = Util.serializeCasBinary(cas, outputDir.path, Some(entityCount))
 
       entityCount = entityCount + 1
+
       val docText = cas.getDocumentText
       if (docText != null) {
         size += docText.length
       }
 
-      queue.add(serialized)
+      queue.add(block(cas.getJCas))
+      collectionTotal.foreach { total =>
+        if (entityCount == total) {
+          promisedCompletion.success(Unit)
+        }
+      }
+
     }
 
   override def onBeforeMessageSend(status: UimaASProcessStatus): Unit = {
