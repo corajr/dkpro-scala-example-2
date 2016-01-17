@@ -79,6 +79,9 @@ class ProcessSpec extends FunSpec with Matchers with BrokerFixture {
 
           val corpus = Corpus.fromDir(corpusDir)
 
+          // warm-up
+          Process.lemmatizeAndNER.runSingleThread(corpus)(_ => Unit)
+
           val singleThreadMillis = time {
             val singleIterator = Process.lemmatizeAndNER.runSingleThread(corpus)(_ => Unit)
           }
@@ -87,7 +90,8 @@ class ProcessSpec extends FunSpec with Matchers with BrokerFixture {
             val multiThreadIterator = Process.lemmatizeAndNER.runMultiThread(corpus)(_ => Unit)
           }
 
-          multiThreadMillis should be < singleThreadMillis - 10000
+          println(singleThreadMillis, multiThreadMillis)
+          multiThreadMillis should be < singleThreadMillis
         }
       }
     }
