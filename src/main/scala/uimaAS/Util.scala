@@ -8,6 +8,7 @@ import org.apache.uima.cas.CAS
 import org.apache.uima.cas.impl.XmiCasSerializer
 import org.apache.uima.cas.impl.XmiCasDeserializer
 import org.apache.uima.cas.impl.Serialization
+import org.apache.uima.examples.SourceDocumentInformation
 import org.apache.uima.jcas.JCas
 
 object Util {
@@ -65,7 +66,7 @@ object Util {
       srcDocInfoType <- Option(cas.getTypeSystem().getType(
         "org.apache.uima.examples.SourceDocumentInformation"))
       it = cas.getIndexRepository().getAllIndexedFS(srcDocInfoType)
-      srcDocInfoFs <- if (it.hasNext()) Some(it.get) else None
+      srcDocInfoFs: SourceDocumentInformation <- if (it.hasNext()) Some(it.get) else None
       uriFeat = srcDocInfoType.getFeatureByBaseName("uri")
       offsetInSourceFeat = srcDocInfoType.getFeatureByBaseName("offsetInSource")
       uri = srcDocInfoFs.getStringValue(uriFeat)

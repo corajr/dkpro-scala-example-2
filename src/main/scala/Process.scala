@@ -5,7 +5,7 @@ import org.apache.uima.fit.util.JCasUtil
 import org.apache.uima.jcas.JCas
 import org.apache.uima.jcas.cas.TOP
 import de.tudarmstadt.ukp.dkpro.core.clearnlp.{ ClearNlpSegmenter, ClearNlpLemmatizer, ClearNlpPosTagger }
-import de.tudarmstadt.ukp.dkpro.core.opennlp.OpenNlpNameFinder
+import de.tudarmstadt.ukp.dkpro.core.opennlp.OpenNlpNamedEntityRecognizer
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 import de.tudarmstadt.ukp.dkpro.core.api.segmentation.`type`.Lemma
@@ -43,7 +43,7 @@ object Process {
       createEngineDescription(classOf[ClearNlpSegmenter]),
       createEngineDescription(classOf[ClearNlpPosTagger]),
       createEngineDescription(classOf[ClearNlpLemmatizer]),
-      createEngineDescription(classOf[OpenNlpNameFinder]))
+      createEngineDescription(classOf[OpenNlpNamedEntityRecognizer], "modelVariant", "person"))
 
   def apply(engines: AnalysisEngineDescription*)(implicit d: DummyImplicit) = new Process(Seq(engines: _*))
 
