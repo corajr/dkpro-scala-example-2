@@ -8,7 +8,7 @@ libraryDependencies ++= Seq(
   "de.tudarmstadt.ukp.dkpro.core" % "de.tudarmstadt.ukp.dkpro.core.clearnlp-asl" % "1.8.0",
   "de.tudarmstadt.ukp.dkpro.core" % "de.tudarmstadt.ukp.dkpro.core.opennlp-asl" % "1.8.0",
   "de.tudarmstadt.ukp.dkpro.core" % "de.tudarmstadt.ukp.dkpro.core.io.text-asl" % "1.8.0",
-  "org.apache.uima" % "uimaj-as-activemq" % "2.9.0",
+  "org.apache.uima" % "uimaj-as-activemq" % "2.8.1",
   "com.clearnlp" % "clearnlp-dictionary" % "1.0",
   "com.clearnlp" % "clearnlp-general-en-pos" % "1.0",
   "com.typesafe.scala-logging" %% "scala-logging" % "3.5.0",
@@ -20,3 +20,9 @@ libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest" % "3.0.0" % "test"
 )
 
+parallelExecution in Test := false
+
+fork := true
+
+javaOptions ++= Seq(
+  "-Xmx4G")
